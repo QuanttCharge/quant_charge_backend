@@ -1,9 +1,8 @@
-import type { ISuperAdmin } from './superAdmin.types.js';
+import type { IUser } from '../../users/domain/user.types.js';
 
 export interface IAuthRepository {
-  findByEmail(email: string):          Promise<ISuperAdmin | null>;
-  findById(id: string):                Promise<ISuperAdmin | null>;
-  create(data: Omit<ISuperAdmin, '_id' | 'createdAt' | 'updatedAt'>): Promise<ISuperAdmin>;
-  updateLastLogin(id: string):         Promise<void>;
-  exists():                            Promise<boolean>;
+  findByEmail(email: string):                                              Promise<IUser | null>;
+  findById(id: string):                                                    Promise<IUser | null>;
+  create(data: Omit<IUser, '_id' | 'createdAt' | 'updatedAt'>):          Promise<IUser>;
+  updateLastLogin(id: string):                                             Promise<void>;
 }
