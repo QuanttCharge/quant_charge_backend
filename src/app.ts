@@ -3,6 +3,8 @@ import helmet from 'helmet';
 import cors from 'cors';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
+import authRouter from './modules/auth/presentation/auth.router.js';
+import { errorHandler } from './common/middlewares/errorHandler.js';
 
 const app = express();
 
@@ -23,6 +25,10 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// TODO: mount module routers here
+// Routes
+app.use('/api/v1/auth', authRouter);
+
+// Error handler — must be last
+app.use(errorHandler);
 
 export default app;
