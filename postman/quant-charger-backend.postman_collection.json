@@ -1,0 +1,207 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "name": "Quant Charger Backend",
+    "description": "EV Charging Management System — Backend API\n\n## Setup\n1. Import this collection into Postman.\n2. Update collection variables `superAdminEmail` and `superAdminPassword` to match your seeded admin (from `.env` used with `npm run seed`).\n3. Ensure the server is running: `npm run dev` (default port `5001` on macOS).\n\n## Auth flow\nRun **Super Admin Login** first — the test script saves `accessToken` and `refreshToken` to collection variables for future protected routes.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5001"
+    },
+    {
+      "key": "superAdminEmail",
+      "value": "admin@quantcharge.com"
+    },
+    {
+      "key": "superAdminPassword",
+      "value": ""
+    },
+    {
+      "key": "accessToken",
+      "value": ""
+    },
+    {
+      "key": "refreshToken",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Liveness check. No authentication required."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Response has ok status', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.status).to.eql('ok');",
+                  "    pm.expect(json.timestamp).to.be.a('string');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Super Admin Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{superAdminEmail}}\",\n  \"password\": \"{{superAdminPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Authenticate super admin. Credentials are read from MongoDB (seed via `npm run seed`).\n\n**Body**\n- `email` (string, required)\n- `password` (string, required, min 8 chars)\n\n**Success (200)**\n```json\n{\n  \"success\": true,\n  \"data\": {\n    \"user\": { \"_id\", \"name\", \"email\", \"role\", \"status\", \"tenantId\", \"lastLoginAt\" },\n    \"tokens\": { \"accessToken\", \"refreshToken\", \"expiresIn\" }\n  }\n}\n```"
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('Login successful', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.true;",
+                  "    pm.expect(json.data.user.email).to.eql(pm.collectionVariables.get('superAdminEmail'));",
+                  "    pm.expect(json.data.tokens.accessToken).to.be.a('string');",
+                  "    pm.expect(json.data.tokens.refreshToken).to.be.a('string');",
+                  "",
+                  "    pm.collectionVariables.set('accessToken', json.data.tokens.accessToken);",
+                  "    pm.collectionVariables.set('refreshToken', json.data.tokens.refreshToken);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Super Admin Login (invalid credentials)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{superAdminEmail}}\",\n  \"password\": \"wrongpassword123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Negative test — expects 401 Unauthorized."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 401', function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test('Error response shape', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.false;",
+                  "    pm.expect(json.message).to.eql('Invalid credentials');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Super Admin Login (validation error)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"not-an-email\",\n  \"password\": \"short\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "v1", "auth", "login"]
+            },
+            "description": "Negative test — invalid email and password under 8 chars. Expects 400 Bad Request."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 400', function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test('Validation error response', function () {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.success).to.be.false;",
+                  "    pm.expect(json.message).to.eql('Validation failed');",
+                  "    pm.expect(json.details).to.be.an('object');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

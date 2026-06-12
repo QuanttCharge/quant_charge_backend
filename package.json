@@ -10,7 +10,8 @@
     "start": "node dist/server.js",
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
-    "test": "jest --passWithNoTests"
+    "test": "jest --passWithNoTests",
+    "seed": "tsx src/scripts/seed.ts"
   },
   "dependencies": {
     "express": "^5.0.0",
