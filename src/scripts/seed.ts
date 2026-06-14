@@ -38,6 +38,7 @@ const seed = async (): Promise<void> => {
 };
 
 seed().catch((err) => {
-  logger.error('[Seed] Failed', { error: err });
+  const message = err instanceof Error ? err.message : String(err);
+  logger.error(`[Seed] Failed: ${message}`);
   process.exit(1);
 });
