@@ -1,43 +1,45 @@
 import 'dotenv/config';
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 import { connectDB } from '../database/index.js';
-import { CreateUserUseCase } from '../modules/auth/application/createUser.usecase.js';
-import { AuthRepository } from '../modules/auth/infrastructure/auth.repository.js';
-import { UserRole } from '../modules/users/domain/user.types.js';
+import { UserModel } from '../modules/users/domain/user.schema.js';
+import { UserRole, UserStatus } from '../modules/users/domain/user.types.js';
 import { logger } from '../common/utils/index.js';
 
 const requireEnv = (key: string): string => {
   const value = process.env[key]?.trim();
-  if (!value) {
-    throw new Error(`${key} must be set in .env`);
-  }
+  if (!value) throw new Error(`${key} must be set in .env`);
   return value;
 };
 
 const seed = async (): Promise<void> => {
   await connectDB();
 
-  const repo = new AuthRepository();
-  const email = requireEnv('SUPER_ADMIN_EMAIL');
-  const existing = await repo.findByEmail(email);
+  const email        = requireEnv('SUPER_ADMIN_EMAIL');
+  const name         = requireEnv('SUPER_ADMIN_NAME');
+  const passwordHash = await bcrypt.hash(requireEnv('SUPER_ADMIN_PASSWORD'), 12);
 
-  if (existing) {
-    logger.info('[Seed] Super admin already exists — skipping');
-  } else {
-    await new CreateUserUseCase(repo).execute({
-      name:     requireEnv('SUPER_ADMIN_NAME'),
-      email,
-      password: requireEnv('SUPER_ADMIN_PASSWORD'),
-      role:     UserRole.SUPER_ADMIN,
-    });
-    logger.info(`[Seed] Super admin created: ${email}`);
-  }
+  const result = await UserModel.findOneAndUpdate(
+    { role: UserRole.SUPER_ADMIN },
+    {
+      $set: {
+        name,
+        email,
+        passwordHash,
+        role:          UserRole.SUPER_ADMIN,
+        status:        UserStatus.ACTIVE,
+        isPasswordSet: true,
+      },
+    },
+    { upsert: true, new: true },
+  );
 
-  await mongoose.disconnect();
-  logger.info('[Seed] Done');
+  logger.info('[Seed] Super admin upserted successfully', { email: result.email });
 };
 
-seed().catch((err) => {
-  logger.error('[Seed] Failed', { error: err });
-  process.exit(1);
-});
+seed()
+  .catch((err) => {
+    logger.error('[Seed] Failed', { error: (err as Error).message });
+    process.exit(1);
+  })
+  .finally(() => mongoose.disconnect());

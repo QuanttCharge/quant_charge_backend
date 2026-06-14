@@ -4,16 +4,19 @@ import { UserRole } from '../../users/domain/user.types.js';
 import { UserModel } from '../../users/domain/user.schema.js';
 
 const toPlain = (doc: any): IUser => ({
-  _id:          doc._id.toString(),
-  name:         doc.name,
-  email:        doc.email,
-  passwordHash: doc.passwordHash,
-  role:         doc.role,
-  status:       doc.status,
-  tenantId:     doc.tenantId,
-  lastLoginAt:  doc.lastLoginAt,
-  createdAt:    doc.createdAt,
-  updatedAt:    doc.updatedAt,
+  _id:                  doc._id.toString(),
+  name:                 doc.name,
+  email:                doc.email,
+  passwordHash:         doc.passwordHash,
+  role:                 doc.role,
+  status:               doc.status,
+  tenantId:             doc.tenantId,
+  isPasswordSet:        doc.isPasswordSet,
+  setupToken:           doc.setupToken,
+  setupTokenExpiresAt:  doc.setupTokenExpiresAt,
+  lastLoginAt:          doc.lastLoginAt,
+  createdAt:            doc.createdAt,
+  updatedAt:            doc.updatedAt,
 });
 
 export class AuthRepository implements IAuthRepository {
@@ -34,5 +37,19 @@ export class AuthRepository implements IAuthRepository {
 
   async updateLastLogin(id: string): Promise<void> {
     await UserModel.findByIdAndUpdate(id, { lastLoginAt: new Date() });
+  }
+
+  async findBySetupToken(token: string): Promise<IUser | null> {
+    const doc = await UserModel.findOne({ setupToken: token });
+    return doc ? toPlain(doc) : null;
+  }
+
+  async setPassword(id: string, passwordHash: string): Promise<void> {
+    await UserModel.findByIdAndUpdate(id, {
+      passwordHash,
+      isPasswordSet:       true,
+      setupToken:          undefined,
+      setupTokenExpiresAt: undefined,
+    });
   }
 }

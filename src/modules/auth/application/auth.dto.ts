@@ -25,7 +25,6 @@ export interface SeedSuperAdminDto {
 export interface CreateUserDto {
   name:      string;
   email:     string;
-  password:  string;
   role:      UserRole;
-  tenantId?: string;
+  tenantId?: string;  // required for super_admin, ignored for tenant_admin
 }

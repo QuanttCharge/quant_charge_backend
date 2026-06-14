@@ -13,16 +13,19 @@ export enum UserStatus {
 }
 
 export interface IUser {
-  _id:          string;
-  name:         string;
-  email:        string;
-  passwordHash: string;
-  role:         UserRole;
-  status:       UserStatus;
-  tenantId?:    string;
-  lastLoginAt?: Date;
-  createdAt:    Date;
-  updatedAt:    Date;
+  _id:                  string;
+  name:                 string;
+  email:                string;
+  passwordHash:         string;
+  role:                 UserRole;
+  status:               UserStatus;
+  tenantId?:            string;
+  isPasswordSet:        boolean;
+  setupToken?:          string;
+  setupTokenExpiresAt?: Date;
+  lastLoginAt?:         Date;
+  createdAt:            Date;
+  updatedAt:            Date;
 }
 
 export interface IUserPublic {
